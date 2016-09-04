@@ -1,0 +1,9 @@
+*.iqm
+*.wav
+*.exe
+*.sln
+*.jpg
+*.vcxproj
+scripts/sdl2
+scripts/__pycache__
+build/*
