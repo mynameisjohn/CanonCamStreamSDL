@@ -22,9 +22,16 @@ void CameraApp::Quit()
 
 void CameraApp::Start()
 {
-	m_CMDQueue.push_back( new OpenSessionCommand( GetCamModel() ) );
-	m_CMDQueue.push_back( new GetPropertyCommand( GetCamModel(), kEdsPropID_ProductName ) );
-	m_CMDQueue.SetCloseCommand( new CloseSessionCommand( GetCamModel() ) );
+	m_CMDQueue.push_back( new CompositeCommand( GetCamModel(), {
+		new OpenSessionCommand( GetCamModel() ),
+		new GetPropertyCommand( GetCamModel(), kEdsPropID_ProductName ),
+		new StartEvfCommand( GetCamModel() )
+
+	} ) );
+
+	m_CMDQueue.SetCloseCommand( new CompositeCommand( GetCamModel(), {
+		new EndEvfCommand( GetCamModel() ),
+		new CloseSessionCommand( GetCamModel() ) } ) );
 
 	m_abRunning.store( true );
 	m_CommandThread = std::thread( [this] ()

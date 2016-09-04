@@ -9,8 +9,6 @@
 #include <atomic>
 #include <chrono>
 
-using CmdPtr = std::unique_ptr<Command>;
-
 class CommandQueue
 {
 	std::mutex m_muCommandMutex;
