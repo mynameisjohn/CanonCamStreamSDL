@@ -3,6 +3,7 @@
 
 #include "CameraEventListener.h"
 #include "CameraApp.h"
+#include "SDLGLWindow.h"
 
 #include <GL/glew.h>
 #include <SDL.h>
@@ -81,45 +82,11 @@ int main( int argc, char ** argv )
 	// Start camera app
 	camApp.Start();
 
-	SDL_Window * pWindow( nullptr );
-	SDL_GLContext glContext( nullptr );
-	pWindow = SDL_CreateWindow( "TestCanonSDK",
-								SDL_WINDOWPOS_UNDEFINED,
-								SDL_WINDOWPOS_UNDEFINED,
-								500,
-								500,
-								SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN );
-
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 0 );
-
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
-	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
-
-	glContext = SDL_GL_CreateContext( pWindow );
-	if ( glContext == nullptr )
-	{
-		std::cout << "Error creating opengl context" << std::endl;
-		return false;
-	}
-
-	//Initialize GLEW
-	glewExperimental = GL_TRUE;
-	GLenum glewError = glewInit();
-	if ( glewError != GLEW_OK )
-	{
-		printf( "Error initializing GLEW! %s\n", glewGetErrorString( glewError ) );
-		return -1;
-	}
-
-	SDL_GL_SetSwapInterval( 1 );
-
-	glClearColor( 1, 1, 0, 1 );
-
-	glEnable( GL_DEPTH_TEST );
-	glDepthMask( GL_TRUE );
-	glDepthFunc( GL_LESS );
-	glEnable( GL_MULTISAMPLE_ARB );
+	SDLGLWindow window( "Test Canon SDK", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+						500,
+						500,
+						SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN,
+						3, 0, true );
 
 	bool bRun = true;
 	while ( bRun )
@@ -141,9 +108,6 @@ int main( int argc, char ** argv )
 
 	// Quit camera app
 	camApp.Quit();
-
-	SDL_DestroyWindow( pWindow );
-	SDL_GL_DeleteContext( glContext );
 
 	if ( false == checkErr( EdsTerminateSDK() ) )
 		return -1;

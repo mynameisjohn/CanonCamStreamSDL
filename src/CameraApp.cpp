@@ -36,7 +36,9 @@ void CameraApp::Start()
 CameraApp::~CameraApp()
 {
 	Quit();
-	m_CommandThread.join();
+
+	if ( m_CommandThread.joinable() )
+		m_CommandThread.join();
 }
 
 void CameraApp::threadProc()
