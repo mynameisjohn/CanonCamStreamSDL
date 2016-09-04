@@ -81,7 +81,6 @@ public:
 			// Get magnification ratio (x1, x5, or x10).
 			EdsGetPropertyData(evfImage, kEdsPropID_Evf_Zoom, 0, sizeof(dataSet.zoom),  &dataSet.zoom);
 
-
 			// Get position of image data. (when enlarging)
 			// Upper left coordinate using JPEG Large size as a reference.
 			EdsGetPropertyData(evfImage, kEdsPropID_Evf_ImagePosition, 0, sizeof(dataSet.imagePosition), &dataSet.imagePosition);
@@ -101,7 +100,6 @@ public:
 			_model->setEvfZoomRect(dataSet.zoomRect);
 
 		}
-
 
 		if(stream != NULL)
 		{

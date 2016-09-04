@@ -18,6 +18,8 @@ CameraModel * CameraApp::GetCamModel() const
 void CameraApp::Quit()
 {
 	m_abRunning.store( false );
+	if ( m_CommandThread.joinable() )
+		m_CommandThread.join();
 }
 
 void CameraApp::Start()
@@ -26,7 +28,6 @@ void CameraApp::Start()
 		new OpenSessionCommand( GetCamModel() ),
 		new GetPropertyCommand( GetCamModel(), kEdsPropID_ProductName ),
 		new StartEvfCommand( GetCamModel() )
-
 	} ) );
 
 	m_CMDQueue.SetCloseCommand( new CompositeCommand( GetCamModel(), {
@@ -38,14 +39,14 @@ void CameraApp::Start()
 	{
 		threadProc();
 	} );
+
+	//std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
+	//m_CMDQueue.push_back( );
 }
 
 CameraApp::~CameraApp()
 {
 	Quit();
-
-	if ( m_CommandThread.joinable() )
-		m_CommandThread.join();
 }
 
 void CameraApp::threadProc()
@@ -60,7 +61,13 @@ void CameraApp::threadProc()
 		std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
 		auto pCMD = m_CMDQueue.pop();
 		if ( pCMD )
-			pCMD->execute();
+		{
+			if ( pCMD->execute() == false )
+			{
+				std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
+				m_CMDQueue.push_back( pCMD.release() );
+			}
+		}
 
 		bRunning_tl = m_abRunning.load();
 	}

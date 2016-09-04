@@ -28,8 +28,8 @@ CmdPtr CommandQueue::pop()
 	if ( m_liCommands.empty() )
 		return nullptr;
 
-	auto ret = std::move( m_liCommands.back() );
-	m_liCommands.pop_back();
+	auto ret = std::move( m_liCommands.front() );
+	m_liCommands.pop_front();
 	return std::move( ret );
 }
 

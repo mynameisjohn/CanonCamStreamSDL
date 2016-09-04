@@ -31,11 +31,15 @@ public:
 	}
 	bool execute() override
 	{
-		return std::all_of(m_liCommands.begin(), m_liCommands.end(), 
-							[] ( const CmdPtr& pCMD )
+		for ( auto itCMD = m_liCommands.begin(); itCMD != m_liCommands.end(); )
 		{
-			return pCMD->execute();
-		} );
+			if ( itCMD->get()->execute() )
+				itCMD = m_liCommands.erase( itCMD );
+			else
+				return false;
+		}
+
+		return m_liCommands.empty();
 	}
 };
 

@@ -101,7 +101,11 @@ int main( int argc, char ** argv )
 				if ( e.key.keysym.sym == SDLK_ESCAPE )
 					bRun = false;
 				else if ( e.key.keysym.sym == SDLK_SPACE )
-					camApp.GetCmdQueue()->push_back( new TakePictureCommand( camApp.GetCamModel() ) );
+					camApp.GetCmdQueue()->push_back( new CompositeCommand( camApp.GetCamModel(), {
+						new EndEvfCommand( camApp.GetCamModel() ),
+						new TakePictureCommand( camApp.GetCamModel() ),
+						new StartEvfCommand( camApp.GetCamModel() ) } ) );
+
 			}
 		}
 	}
