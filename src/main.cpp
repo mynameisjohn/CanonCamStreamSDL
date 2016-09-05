@@ -90,13 +90,11 @@ int main( int argc, char ** argv )
 	camApp.Start();
 
 	float fPicSize = 0.5f;
-	CamDisplayWindow window( "Test Canon SDK", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-							 500,
-							 500,
-							 SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN,
-							 3, 0, true,
-							 "../shaders/shader.vert", "../shaders/shader.frag",
-							 512, 512, 0.5f);
+	//CamDisplayWindow window( &camApp, "Test Canon SDK", 
+	//	SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 500, 500, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN,
+	//	3, 0, true,
+	//	"../shaders/shader.vert", "../shaders/shader.frag",
+	//	512, 512, 0.5f);
 
 	bool bRun = true;
 	while ( bRun )
@@ -120,7 +118,7 @@ int main( int argc, char ** argv )
 			}
 		}
 
-		window.Draw();
+		camApp.GetWindow()->Draw();
 	}
 
 	// Quit camera app

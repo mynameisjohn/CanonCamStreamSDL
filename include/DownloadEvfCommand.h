@@ -32,9 +32,16 @@ typedef struct _EVF_DATASET
 
 class DownloadEvfCommand : public Command
 {
-
 public:
-	DownloadEvfCommand(CameraModel *model) : Command(model){}
+	struct Receiver
+	{
+		virtual bool HandleEVFImage() = 0;
+	} *m_pReceiver{ nullptr };
+
+	DownloadEvfCommand(CameraModel *model, Receiver * pReceiver = nullptr) : 
+		Command(model), 
+		m_pReceiver(pReceiver)
+	{}
 
     // Execute command	
 	virtual bool execute()
@@ -52,86 +59,93 @@ public:
 			return true;
 		}
 
-		// Create memory stream.
-		err = EdsCreateMemoryStream(bufferSize, &stream);
-
-		// When creating to a file.
-		// err = EdsCreateFileStream("C:\\test.jpg", kEdsFileCreateDisposition_CreateAlways, kEdsAccess_ReadWrite, &stream);
-
-
-		// Create EvfImageRef.
-		if (err == EDS_ERR_OK)
+		if ( m_pReceiver )
 		{
-			err = EdsCreateEvfImageRef(stream, &evfImage);
+			return m_pReceiver->HandleEVFImage();
 		}
-
-		// Download live view image data.
-		if (err == EDS_ERR_OK)
+		else
 		{
-			err = EdsDownloadEvfImage(_model->getCameraObject(), evfImage);
-		}
+			// Create memory stream.
+			err = EdsCreateMemoryStream( bufferSize, &stream );
 
-		// Get meta data for live view image data.
-		if (err == EDS_ERR_OK)
-		{
-			EVF_DATASET dataSet = {0};
+			// When creating to a file.
+			// err = EdsCreateFileStream("C:\\test.jpg", kEdsFileCreateDisposition_CreateAlways, kEdsAccess_ReadWrite, &stream);
 
-			dataSet.stream = stream;
 
-			// Get magnification ratio (x1, x5, or x10).
-			EdsGetPropertyData(evfImage, kEdsPropID_Evf_Zoom, 0, sizeof(dataSet.zoom),  &dataSet.zoom);
-
-			// Get position of image data. (when enlarging)
-			// Upper left coordinate using JPEG Large size as a reference.
-			EdsGetPropertyData(evfImage, kEdsPropID_Evf_ImagePosition, 0, sizeof(dataSet.imagePosition), &dataSet.imagePosition);
-
-			// Get histogram (RGBY).
-			EdsGetPropertyData(evfImage, kEdsPropID_Evf_Histogram, 0, sizeof(dataSet.histogram), dataSet.histogram);
-
-			// Get rectangle of the focus border.
-			EdsGetPropertyData(evfImage, kEdsPropID_Evf_ZoomRect, 0, sizeof(dataSet.zoomRect), &dataSet.zoomRect);
-
-			// Get the size as a reference of the coordinates of rectangle of the focus border.
-			EdsGetPropertyData(evfImage, kEdsPropID_Evf_CoordinateSystem, 0, sizeof(dataSet.sizeJpegLarge), &dataSet.sizeJpegLarge);
-
-			// Set to model.
-			_model->setEvfZoom(dataSet.zoom);
-			_model->setEvfZoomPosition(dataSet.zoomRect.point);
-			_model->setEvfZoomRect(dataSet.zoomRect);
-
-		}
-
-		if(stream != NULL)
-		{
-			EdsRelease(stream);
-			stream = NULL;
-		}
-		
-		if(evfImage != NULL)
-		{
-			EdsRelease(evfImage);
-			evfImage = NULL;
-		}
-         
-		//Notification of error
-		if(err != EDS_ERR_OK)
-		{
-		
-			// Retry getting image data if EDS_ERR_OBJECT_NOTREADY is returned
-			// when the image data is not ready yet.
-			if(err == EDS_ERR_OBJECT_NOTREADY)
+			// Create EvfImageRef.
+			if ( err == EDS_ERR_OK )
 			{
-				return false;
+				err = EdsCreateEvfImageRef( stream, &evfImage );
 			}
 
-			// It retries it at device busy
-			if(err == EDS_ERR_DEVICE_BUSY)
+			// Download live view image data.
+			if ( err == EDS_ERR_OK )
 			{
-				return false;
+				err = EdsDownloadEvfImage( _model->getCameraObject(), evfImage );
 			}
-		}
 
-		return true;
+			// Get meta data for live view image data.
+			if ( err == EDS_ERR_OK )
+			{
+
+				EVF_DATASET dataSet = { 0 };
+
+				dataSet.stream = stream;
+
+				// Get magnification ratio (x1, x5, or x10).
+				EdsGetPropertyData( evfImage, kEdsPropID_Evf_Zoom, 0, sizeof( dataSet.zoom ), &dataSet.zoom );
+
+				// Get position of image data. (when enlarging)
+				// Upper left coordinate using JPEG Large size as a reference.
+				EdsGetPropertyData( evfImage, kEdsPropID_Evf_ImagePosition, 0, sizeof( dataSet.imagePosition ), &dataSet.imagePosition );
+
+				// Get histogram (RGBY).
+				EdsGetPropertyData( evfImage, kEdsPropID_Evf_Histogram, 0, sizeof( dataSet.histogram ), dataSet.histogram );
+
+				// Get rectangle of the focus border.
+				EdsGetPropertyData( evfImage, kEdsPropID_Evf_ZoomRect, 0, sizeof( dataSet.zoomRect ), &dataSet.zoomRect );
+
+				// Get the size as a reference of the coordinates of rectangle of the focus border.
+				EdsGetPropertyData( evfImage, kEdsPropID_Evf_CoordinateSystem, 0, sizeof( dataSet.sizeJpegLarge ), &dataSet.sizeJpegLarge );
+
+				// Set to model.
+				_model->setEvfZoom( dataSet.zoom );
+				_model->setEvfZoomPosition( dataSet.zoomRect.point );
+				_model->setEvfZoomRect( dataSet.zoomRect );
+			}
+
+			if ( stream != NULL )
+			{
+				EdsRelease( stream );
+				stream = NULL;
+			}
+
+			if ( evfImage != NULL )
+			{
+				EdsRelease( evfImage );
+				evfImage = NULL;
+			}
+
+			//Notification of error
+			if ( err != EDS_ERR_OK )
+			{
+
+				// Retry getting image data if EDS_ERR_OBJECT_NOTREADY is returned
+				// when the image data is not ready yet.
+				if ( err == EDS_ERR_OBJECT_NOTREADY )
+				{
+					return false;
+				}
+
+				// It retries it at device busy
+				if ( err == EDS_ERR_DEVICE_BUSY )
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
 	}
 
 
