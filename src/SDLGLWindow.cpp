@@ -40,7 +40,7 @@ SDLGLWindow::SDLGLWindow( std::string strName, int posX, int posY, int width, in
 
 	SDL_GL_SetSwapInterval( 1 );
 
-	glClearColor( 1, 1, 0, 1 );
+	glClearColor( 0, 0, 0, 1 );
 
 	glEnable( GL_DEPTH_TEST );
 	glDepthMask( GL_TRUE );
@@ -59,4 +59,22 @@ SDLGLWindow::~SDLGLWindow()
 		SDL_DestroyWindow( m_pWindow );
 	if ( m_GLContext )
 		SDL_GL_DeleteContext( m_GLContext );
+}
+
+SDL_Window * SDLGLWindow::GetWindow() const
+{
+	return m_pWindow;
+}
+
+SDLGLWindow::Updater::Updater( SDL_Window * pW ) :
+	pWND( pW )
+{
+	if ( pWND )
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+}
+
+SDLGLWindow::Updater::~Updater()
+{
+	if ( pWND )
+		SDL_GL_SwapWindow( pWND );
 }

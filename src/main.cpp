@@ -3,7 +3,11 @@
 
 #include "CameraEventListener.h"
 #include "CameraApp.h"
-#include "SDLGLWindow.h"
+
+#include "CamDisplayWindow.h"
+#include "Drawable.h"
+#include "Shader.h"
+#include "GLCamera.h"
 
 #include <GL/glew.h>
 #include <SDL.h>
@@ -11,6 +15,9 @@
 #include <SDL_events.h>
 
 #include <iostream>
+#include <vector>
+
+
 
 bool checkErr( EdsError err )
 {
@@ -82,11 +89,14 @@ int main( int argc, char ** argv )
 	// Start camera app
 	camApp.Start();
 
-	SDLGLWindow window( "Test Canon SDK", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-						500,
-						500,
-						SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN,
-						3, 0, true );
+	float fPicSize = 0.5f;
+	CamDisplayWindow window( "Test Canon SDK", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+							 500,
+							 500,
+							 SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN,
+							 3, 0, true,
+							 "../shaders/shader.vert", "../shaders/shader.frag",
+							 512, 512, 0.5f);
 
 	bool bRun = true;
 	while ( bRun )
@@ -101,6 +111,7 @@ int main( int argc, char ** argv )
 				if ( e.key.keysym.sym == SDLK_ESCAPE )
 					bRun = false;
 				else if ( e.key.keysym.sym == SDLK_SPACE )
+					// To take a picture, end evf mode, take picture, and start it back up
 					camApp.GetCmdQueue()->push_back( new CompositeCommand( camApp.GetCamModel(), {
 						new EndEvfCommand( camApp.GetCamModel() ),
 						new TakePictureCommand( camApp.GetCamModel() ),
@@ -108,6 +119,8 @@ int main( int argc, char ** argv )
 
 			}
 		}
+
+		window.Draw();
 	}
 
 	// Quit camera app
