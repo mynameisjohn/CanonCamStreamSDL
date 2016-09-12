@@ -10,6 +10,7 @@
 #include "DownloadEvfCommand.h"
 
 class CameraApp;
+class SDL_Surface;
 
 class CamDisplayWindow : public SDLGLWindow, public DownloadEvfCommand::Receiver
 {
@@ -18,8 +19,19 @@ class CamDisplayWindow : public SDLGLWindow, public DownloadEvfCommand::Receiver
 	Drawable m_PictureQuad;
 	CameraApp * m_pCamApp;
 
+	struct EdsImgStream
+	{
+		EdsStreamRef stmRef;
+		EdsImageRef imgRef;
+		SDL_Surface * imgSurf;
+	};
+
+	bool m_bTexCreated;
 	std::mutex m_muEVFImage;
-	EdsStreamRef m_ImgRef;
+	bool m_bUploadReadImg;
+	EdsImgStream m_ReadImg, m_WriteImg;
+
+	bool updateImage();
 
 public:
 	CamDisplayWindow( CameraApp * pApp, std::string strName, int posX, int posY, int width, int height, int flags,

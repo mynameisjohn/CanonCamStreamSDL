@@ -7,6 +7,7 @@ set(CMAKE_CXX_FLAGS "-std=c++14 -Wall")
 # SDL2
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Modules")
 find_package(SDL2)
+find_package(SDL2_image)
 find_package(OpenGL)
 find_package(GLEW)
 
@@ -15,13 +16,13 @@ if (WIN32)
 	add_definitions(-DGLEW_STATIC)
 	set(PYTHON_LIBRARY C:/Python35/libs/python35_d.lib)
 	set(PYTHON_INCLUDE_DIR C:/Python35/include)
-	set(SDL2_LIBS ${SDL2_LIBRARY} ${SDLMAIN_LIBRARY})
+	set(SDL2_LIBS ${SDL2_LIBRARY} ${SDL2IMAGE_LIBRARY} ${SDLMAIN_LIBRARY})
 	set(GLM C:/Libraries/glm)
 	set(EDSDK C:/Libraries/EDSDK34/EDSDK)
 else(WIN32)
 	set(PYTHON_LIBRARY /usr/local/lib/libpython3.5m.a)
 	set(PYTHON_INCLUDE_DIR /usr/local/include/python3.5m)
-	set(SDL2_LIBS ${SDL2_LIBRARY})
+	set(SDL2_LIBS ${SDL2_LIBRARY} ${SDL2IMAGE_INCLUDE_DIR})
 	set(GLM /usr/local/include/glm)
 endif(WIN32)
 
@@ -47,5 +48,5 @@ target_include_directories(PyLiaison PUBLIC ${PYL_HEADERS} ${PYTHON_INCLUDE_DIR}
 add_executable(CanonCamStreamSDL ${SOURCES} ${HEADERS} ${SCRIPTS} ${SHADERS})
 
 # Make sure it gets its include paths
-target_include_directories(CanonCamStreamSDL PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${PYTHON_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/pyl ${SDL2_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIRS} ${GLM} ${EDSDK}/Header)
+target_include_directories(CanonCamStreamSDL PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${PYTHON_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/pyl ${SDL2_INCLUDE_DIR} ${SDL2IMAGE_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIRS} ${GLM} ${EDSDK}/Header)
 target_link_libraries(CanonCamStreamSDL LINK_PUBLIC PyLiaison ${PYTHON_LIBRARY} ${SDL2_LIBS} ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES}  ${EDSDK}/Library/EDSDK.lib)

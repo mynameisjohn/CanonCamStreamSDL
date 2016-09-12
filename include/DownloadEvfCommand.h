@@ -113,7 +113,7 @@ public:
 				_model->setEvfZoomPosition( dataSet.zoomRect.point );
 				_model->setEvfZoomRect( dataSet.zoomRect );
 			}
-
+			
 			if ( stream != NULL )
 			{
 				EdsRelease( stream );
