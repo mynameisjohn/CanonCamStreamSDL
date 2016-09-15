@@ -8,30 +8,21 @@
 
 GLuint initTexture( void * PXA, int w, int h )
 {
-	GLuint tex;
-
 	//Generate the device texture and bind it
+	GLuint tex( 0 );
 	glGenTextures( 1, &tex );
 	glBindTexture( GL_TEXTURE_2D, tex );
 
 	//Upload host texture to device
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, PXA );
-
-	//Does this really help?
-	glGenerateMipmap( GL_TEXTURE_2D );
-
+	
 	// Set filtering   
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 
-	//This necessary?
-	float aniso = 0.0f;
-	glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso );
-	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso );
-
-	//Unbind, Delete the host texture, return handle to device texture
+	// Unbind, return handle to device texture
 	glBindTexture( GL_TEXTURE_2D, 0 );
 
 	return tex;
@@ -47,16 +38,22 @@ CamDisplayWindow::CamDisplayWindow( CameraApp * pApp, std::string strName,
 	m_bTexCreated( false ),
 	m_bUploadReadImg( false )
 {
+	// Create shader and camera
 	m_Shader.Init( strVertShader, strFragShader, true );
 	m_Camera.InitOrtho(width, height, -1, 1, -1, 1 );
 
+	// Bind shader
 	auto sBind = m_Shader.ScopeBind();
 
+	// Set shader variable handles
 	Drawable::SetPosHandle( m_Shader.GetHandle( "a_Pos" ) );
 	Drawable::SetTexHandle( m_Shader.GetHandle( "a_Tex" ) );
 	Drawable::SetColorHandle( m_Shader.GetHandle( "u_Color" ) );
-	glUniform1i( m_Shader.GetHandle( "u_TexSampler" ), GL_TEXTURE20 );
 
+	// Don't know about this one
+	//glUniform1i( m_Shader.GetHandle( "u_TexSampler" ), GL_TEXTURE20 );
+
+	// Create drawable with texture coords
 	std::array<glm::vec3, 4> arTexCoords{
 		glm::vec3( -fQuadSize, -fQuadSize, 0 ),
 		glm::vec3( fQuadSize, -fQuadSize, 0 ),
@@ -65,47 +62,23 @@ CamDisplayWindow::CamDisplayWindow( CameraApp * pApp, std::string strName,
 	};
 	m_PictureQuad.Init( "PictureQuad", arTexCoords, vec4( 1 ), quatvec(), vec2( 1, 1 ) );
 
+	// Init read and write streams
 	memset( &m_ReadImg, 0, sizeof( EdsImgStream ) );
 	memset( &m_WriteImg, 0, sizeof( EdsImgStream ) );
-
-	//EdsError err = EdsCreateMemoryStream( 2, &m_ReadImg );
-	//if ( err != EDS_ERR_OK )
-	//	throw std::runtime_error( "Error creating image stream!" );
-	//err = EdsCreateMemoryStream( 2, &m_WriteImg );
-	//if ( err != EDS_ERR_OK )
-	//	throw std::runtime_error( "Error creating image stream!" );
-
-//	std::vector<int> vTexData( texWidth * texHeight, 0 );
-	//m_PictureQuad.SetTexID( initTexture( vTexData.data(), texWidth, texHeight ) );
-
-	//EdsImageRef imgRef( nullptr );
-	//EdsError err = EdsCreateMemoryStream( sizeof( int )*vTexData.size(), &imgRef );
-	//if ( err != EDS_ERR_OK )
-	//	throw std::runtime_error( "Error creating image stream!" );
-
-	//void * pDataStream( nullptr );
-	//EdsUInt64 uDataSize( 0 );
-	//err = EdsGetPointer( imgRef, &pDataStream );
-	//err = EdsGetLength( imgRef, &uDataSize );
-	//m_PictureQuad.SetTexID( initTexture( vTexData.data(), texWidth, texHeight ) );
-
-	//m_ImgRefB = imgRef;
 }
 
 bool CamDisplayWindow::updateImage()
 {
+	// Either create a new texture and upload it
+	// or update the existing texture
 	std::lock_guard<std::mutex> lg( m_muEVFImage );
 	if ( m_bUploadReadImg && m_ReadImg.imgSurf )
 	{
 		if ( m_bTexCreated )
 		{
-			for ( int i = 0; i < m_ReadImg.imgSurf->w*m_ReadImg.imgSurf->h; i++ )
-			{
-				char * addr = &((char *) m_ReadImg.imgSurf->pixels)[i];
-				*addr++ = 0xff;
-			}
 			glBindTexture( GL_TEXTURE_2D, m_PictureQuad.GetTexID() );
 			glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, m_ReadImg.imgSurf->w, m_ReadImg.imgSurf->h, GL_RGB, GL_UNSIGNED_BYTE, m_ReadImg.imgSurf->pixels );
+			glBindTexture( GL_TEXTURE_2D, 0 );
 		}
 		else
 		{
@@ -126,7 +99,7 @@ bool CamDisplayWindow::updateImage()
 
 void CamDisplayWindow::Draw()
 {
-	glActiveTexture( m_Shader.GetHandle( "u_TexSampler" ) );
+	//glActiveTexture( m_Shader.GetHandle( "u_TexSampler" ) );
 	
 	updateImage();
 
@@ -142,7 +115,7 @@ void CamDisplayWindow::Draw()
 	glUniform4fv( clrHandle, 1, glm::value_ptr( c ) );
 	m_PictureQuad.Draw();
 
-	glActiveTexture( 0 );
+	//glActiveTexture( 0 );
 	glBindTexture( GL_TEXTURE_2D, 0 );
 }
 
