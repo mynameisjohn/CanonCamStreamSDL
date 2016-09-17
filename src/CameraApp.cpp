@@ -7,10 +7,10 @@
 CameraApp::CameraApp( EdsCameraRef cam ) :
 	m_CamModel( cam ),
 	m_DisplayWindow( this, "Test Canon SDK",
-					 SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 500, 500, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN,
+					 SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1056, 704, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN,
 					 3, 0, true,
 					 "../shaders/shader.vert", "../shaders/shader.frag",
-					 512, 512, 0.5f )
+					 1056, 704, 1.f )
 {
 }
 

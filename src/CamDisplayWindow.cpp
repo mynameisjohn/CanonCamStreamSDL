@@ -32,7 +32,7 @@ CamDisplayWindow::CamDisplayWindow( CameraApp * pApp, std::string strName,
 									int posX, int posY, int width, int height, int flags,
 									int glMajor, int glMinor, bool bDoubleBuf,
 									std::string strVertShader, std::string strFragShader,
-									int texWidth, int texHeight, float fQuadSize ) :
+									float fQuadSize ) :
 	SDLGLWindow( strName, posX, posY, width, height, flags, glMajor, glMinor, bDoubleBuf ),
 	m_pCamApp( pApp ),
 	m_bTexCreated( false ),
