@@ -87,7 +87,7 @@ bool Drawable::Init( std::string strName, std::array<glm::vec3, 4> quadVerts, gl
 			// Unbind VAO and cache data
 			glBindVertexArray( 0 );
 
-			s_VAOCache[strName] = { VAO, indices.size() };
+			s_VAOCache[strName] = { VAO, (GLuint) indices.size() };
 		}
 		catch ( std::runtime_error )
 		{

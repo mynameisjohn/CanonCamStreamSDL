@@ -70,7 +70,9 @@ int main( int argc, char ** argv )
 {
 	EdsCameraRef camera = GetCamera();
 	if ( camera == nullptr )
-		return -1;
+	{
+		std::cout << "Error getting camera, exiting program" << std::endl;
+	}
 
 	CameraApp camApp( camera );
 	
