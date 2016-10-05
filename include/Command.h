@@ -52,3 +52,4 @@ public:
 #include "StartEvfCommand.h"
 #include "EndEvfCommand.h"
 #include "DownloadEvfCommand.h"
+#include "SleepCommand.h"

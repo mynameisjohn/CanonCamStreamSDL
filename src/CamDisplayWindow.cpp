@@ -122,6 +122,19 @@ void CamDisplayWindow::Draw()
 	glBindTexture( GL_TEXTURE_2D, 0 );
 }
 
+void equalizeIntensityHist( cv::Mat& in )
+{
+	// Convert to YCbCr and equalize histogram, recombine and unconvert
+	cv::Mat matYCR;
+	cv::cvtColor( in, matYCR, CV_RGB2YCrCb );
+	std::vector<cv::Mat> vChannels;
+	cv::split( matYCR, vChannels );
+	cv::equalizeHist( vChannels[0], vChannels[0] );
+	cv::merge( vChannels, matYCR );
+	cv::cvtColor( matYCR, in, CV_YCrCb2RGB );
+	in.convertTo( in, CV_32FC3 );
+};
+
 bool CamDisplayWindow::HandleEVFImage()
 {
 	if ( m_pCamApp == nullptr )
@@ -177,25 +190,15 @@ bool CamDisplayWindow::HandleEVFImage()
 						throw std::runtime_error( "Error decoding JPG image!" );
 					}
 
-					// Convert to YCbCr and equalize histogram, recombine and unconvert
-					cv::Mat matYCR;
-					cv::cvtColor( matImg, matYCR, CV_RGB2YCrCb );
-					std::vector<cv::Mat> vChannels;
-					cv::split( matYCR, vChannels );
-					cv::equalizeHist( vChannels[0], vChannels[0] );
-					cv::merge( vChannels, matYCR );
-					cv::cvtColor( matYCR, matImg, CV_YCrCb2RGB );
-
-					// Convert from rgb24 to rgb float (needed?), store
-					m_vImageStack.emplace_back();
-					matImg.convertTo( m_vImageStack.back(), CV_32FC3 );
-					m_vImageStack.back() /= (float) 0xFF;
+					equalizeIntensityHist( matImg );
+					matImg /= (float) 0xFF;
+					m_vImageStack.emplace_back( std::move( matImg ) );
 				}
 			}
 		}
 
 		// Every 10 images, collapse the stack
-		if ( m_vImageStack.size() >= 1 )
+		if ( m_vImageStack.size() >= 10 )
 		{
 			// Average the pixels of every image in the stack
 			cv::Mat avgImg( m_vImageStack.front().rows, m_vImageStack.front().cols, m_vImageStack.front().type() );
@@ -203,6 +206,8 @@ bool CamDisplayWindow::HandleEVFImage()
 			const float fDiv = 1.f / m_vImageStack.size();
 			for ( cv::Mat& img : m_vImageStack )
 				avgImg += fDiv * img;
+
+			//equalizeIntensityHist( avgImg );
 
 			// Lock mutex, post to read image and set flag
 			{
@@ -216,7 +221,11 @@ bool CamDisplayWindow::HandleEVFImage()
 		}
 
 		// Enqueue the next download command, get out
-		m_pCamApp->GetCmdQueue()->push_back( new DownloadEvfCommand( m_pCamApp->GetCamModel(), this ) );
+		if ( m_pCamApp->GetIsEvfRunning() )
+			m_pCamApp->GetCmdQueue()->push_back( new DownloadEvfCommand( m_pCamApp->GetCamModel(), this ) );
+		else
+			return true;
+
 		return true;
 	}
 

@@ -17,6 +17,8 @@
 
 #include "EDSDK.h"
 
+class CameraApp;
+
 class CameraModel
 {
 protected:
@@ -57,9 +59,15 @@ protected:
 	EdsPropertyDesc _ImageQualityDesc;
 	EdsPropertyDesc _evfAFModeDesc;
 
+	CameraApp * m_pCamApp;
+
 public:
 	// Constructor
-	CameraModel( EdsCameraRef camera ) :_lockCount( 0 ), _camera( camera ) { memset( &_focusInfo, 0, sizeof( _focusInfo ) ); }
+	CameraModel( CameraApp * pCamApp, EdsCameraRef camera ) : m_pCamApp( pCamApp ), _lockCount( 0 ), _camera( camera )
+	{
+		memset( &_focusInfo, 0, sizeof( _focusInfo ) );
+	}
+
 	~CameraModel()
 	{
 		EdsRelease( _camera );
@@ -88,6 +96,8 @@ public:
 	void setModelName( EdsChar *modelName ) { strcpy_s( _modelName, modelName ); }
 	void setEvfAFMode( EdsUInt32 value ) { _evfAFMode = value; }
 	void setFocusInfo( EdsFocusInfo value ) { _focusInfo = value; }
+
+	CameraApp * GetCamApp() const { return m_pCamApp; };
 
 	// Taking a picture parameter
 	EdsUInt32 getAEMode() const { return _AEMode; }

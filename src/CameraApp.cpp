@@ -5,13 +5,15 @@
 #include <SDL.h>
 
 CameraApp::CameraApp( EdsCameraRef cam ) :
-	m_CamModel( cam ),
+	m_CamModel( this, cam ),
 	m_DisplayWindow( this, "Test Canon SDK",
 					 SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1056, 704, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN,
 					 3, 0, true,
 					 "shader.vert", "shader.frag",
 					 1.f )
 {
+	m_abRunning.store( false );
+	m_abEvfRunning.store( false );
 }
 
 CommandQueue * CameraApp::GetCmdQueue() const
@@ -32,6 +34,8 @@ CamDisplayWindow * CameraApp::GetWindow() const
 void CameraApp::Quit()
 {
 	m_abRunning.store( false );
+	m_abEvfRunning.store( false );
+
 	if ( m_CommandThread.joinable() )
 		m_CommandThread.join();
 }
@@ -52,6 +56,7 @@ void CameraApp::Start()
 		new CloseSessionCommand( GetCamModel() ) } ) );
 
 	m_abRunning.store( true );
+
 	m_CommandThread = std::thread( [this] ()
 	{
 		threadProc();
@@ -90,4 +95,14 @@ void CameraApp::threadProc()
 	}
 
 	m_CMDQueue.clear( true );
+}
+
+void CameraApp::SetEvfRunning( bool bEvfRunning )
+{
+	m_abEvfRunning.store( bEvfRunning );
+}
+
+bool CameraApp::GetIsEvfRunning() const
+{
+	return m_abEvfRunning.load();
 }

@@ -20,6 +20,7 @@ public:
 	CmdPtr pop();
 	void push_back( Command * pCMD );
 	void clear( bool bClose = false );
+	void waitTillCompletion();
 
 	void SetCloseCommand( Command * pCMD );
 };

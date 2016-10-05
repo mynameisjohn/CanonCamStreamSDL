@@ -26,30 +26,5 @@ public:
 
 
 	// Execute command	
-	virtual bool execute()
-	{
-		EdsError err = EDS_ERR_OK;
-		bool	 locked = false;
-		
-		//Taking a picture
-		err = EdsSendCommand(_model->getCameraObject(), kEdsCameraCommand_PressShutterButton, kEdsCameraCommand_ShutterButton_Completely);
-		      EdsSendCommand(_model->getCameraObject(), kEdsCameraCommand_PressShutterButton, kEdsCameraCommand_ShutterButton_OFF);
-		
-
-		//Notification of error
-		if(err != EDS_ERR_OK)
-		{
-			// It retries it at device busy
-			if(err == EDS_ERR_DEVICE_BUSY)
-			{
-				return true;
-			}
-		}
-
-		
-
-		return true;
-	}
-
-
+	bool execute() override;
 };

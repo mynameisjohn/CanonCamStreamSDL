@@ -48,3 +48,14 @@ void CommandQueue::SetCloseCommand( Command * pCMD )
 	else
 		m_pCloseCommand.reset();
 }
+
+void CommandQueue::waitTillCompletion()
+{
+	volatile bool bSpin = true;
+	while ( bSpin )
+	{
+		std::this_thread::sleep_for( std::chrono::milliseconds( 250 ) );
+		std::lock_guard<std::mutex> lg( m_muCommandMutex );
+		bSpin = !m_liCommands.empty();
+	}
+}

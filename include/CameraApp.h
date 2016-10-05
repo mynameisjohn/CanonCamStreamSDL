@@ -11,6 +11,7 @@ class CameraApp
 	CamDisplayWindow m_DisplayWindow;
 
 	std::atomic_bool m_abRunning;
+	std::atomic_bool m_abEvfRunning;
 
 	std::thread m_CommandThread;
 
@@ -25,6 +26,9 @@ public:
 	void Start();
 
 	~CameraApp();
+
+	void SetEvfRunning( bool bEvfRunning );
+	bool GetIsEvfRunning() const;
 
 private:
 	void threadProc();
