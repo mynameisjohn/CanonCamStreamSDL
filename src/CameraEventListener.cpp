@@ -61,7 +61,7 @@
 	switch ( inEvent )
 	{
 		case kEdsStateEvent_Shutdown:
-			pCamApp->Quit();
+			pCamApp->SetMode( CameraApp::Mode::Off );
 			break;
 	}
 

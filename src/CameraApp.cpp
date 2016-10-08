@@ -14,6 +14,7 @@ CameraApp::CameraApp( EdsCameraRef cam ) :
 {
 	m_abRunning.store( false );
 	m_abEvfRunning.store( false );
+	m_aMode.store( CameraApp::Mode::Off );
 }
 
 CommandQueue * CameraApp::GetCmdQueue() const
@@ -31,16 +32,17 @@ CamDisplayWindow * CameraApp::GetWindow() const
 	return (CamDisplayWindow *) &m_DisplayWindow;
 }
 
-void CameraApp::Quit()
+void CameraApp::quit()
 {
 	m_abRunning.store( false );
 	m_abEvfRunning.store( false );
+	m_aMode.store( CameraApp::Mode::Off );
 
 	if ( m_CommandThread.joinable() )
 		m_CommandThread.join();
 }
 
-void CameraApp::Start()
+void CameraApp::start()
 {
 	m_CMDQueue.push_back( new CompositeCommand( GetCamModel(), {
 		new OpenSessionCommand( GetCamModel() ),
@@ -68,7 +70,7 @@ void CameraApp::Start()
 
 CameraApp::~CameraApp()
 {
-	Quit();
+	quit();
 }
 
 void CameraApp::threadProc()
@@ -105,4 +107,51 @@ void CameraApp::SetEvfRunning( bool bEvfRunning )
 bool CameraApp::GetIsEvfRunning() const
 {
 	return m_abEvfRunning.load();
+}
+
+std::ostream& operator<<( std::ostream& o, const CameraApp::Mode m )
+{
+	switch ( m )
+	{
+		case CameraApp::Mode::Off:
+			o << "Off";
+			break;
+		case CameraApp::Mode::Streaming:
+			o << "Streaming";
+			break;
+		case CameraApp::Mode::Averaging:
+			o << "Averaging";
+			break;
+		case CameraApp::Mode::Equalizing:
+			o << "Equalizing";
+			break;
+	}
+	return o;
+}
+
+void CameraApp::SetMode( const CameraApp::Mode m )
+{
+	CameraApp::Mode curMode = m_aMode.load();
+	if ( curMode != m )
+	{
+		std::cout << "App transitioning from mode " << curMode << " to mode " << m << std::endl;
+		switch ( m )
+		{
+			case Mode::Off:
+				quit();
+				break;
+			case Mode::Streaming:
+			case Mode::Averaging:
+			case Mode::Equalizing:
+				if ( m_aMode.load() == Mode::Off )
+					start();
+				break;
+		}
+		m_aMode.store( m );
+	}
+}
+
+CameraApp::Mode CameraApp::GetMode() const
+{
+	return m_aMode.load();
 }

@@ -132,7 +132,7 @@ void equalizeIntensityHist( cv::Mat& in )
 	cv::equalizeHist( vChannels[0], vChannels[0] );
 	cv::merge( vChannels, matYCR );
 	cv::cvtColor( matYCR, in, CV_YCrCb2RGB );
-	in.convertTo( in, CV_32FC3 );
+	in.convertTo( in, CV_32FC3, 1.f / 0xFF );
 };
 
 bool CamDisplayWindow::HandleEVFImage()
@@ -171,6 +171,26 @@ bool CamDisplayWindow::HandleEVFImage()
 	// Convert JPG to img, post
 	if ( err == EDS_ERR_OK )
 	{
+		// Cache the current mode here
+		CameraApp::Mode appMode = m_pCamApp->GetMode();
+		bool bDoHistEq( false );
+		size_t nImages( INT_MAX );
+		switch ( appMode )
+		{
+			case CameraApp::Mode::Off:
+				nImages = 0;
+				// return true; // ?
+				break;
+			case CameraApp::Mode::Streaming:
+				nImages = 1;
+				break;
+			case CameraApp::Mode::Equalizing:
+				//bDoHistEq = true;
+			case CameraApp::Mode::Averaging:
+				nImages = 10;
+				break;
+		}
+
 		// Get image data/size
 		void * pData( nullptr );
 		EdsUInt64 uDataSize( 0 );
@@ -190,15 +210,21 @@ bool CamDisplayWindow::HandleEVFImage()
 						throw std::runtime_error( "Error decoding JPG image!" );
 					}
 
-					equalizeIntensityHist( matImg );
-					matImg /= (float) 0xFF;
-					m_vImageStack.emplace_back( std::move( matImg ) );
+					if ( bDoHistEq )
+						equalizeIntensityHist( matImg );
+					else
+						matImg.convertTo( matImg, CV_32FC3, 1.f / 0xFF );
+
+					if ( nImages > 1 )
+						m_vImageStack.emplace_back( std::move( matImg ) );
+					else
+						m_vImageStack = { matImg };
 				}
 			}
 		}
 
-		// Every 10 images, collapse the stack
-		if ( m_vImageStack.size() >= 10 )
+		// Every nImages, collapse the stack
+		if ( m_vImageStack.size() >= nImages )
 		{
 			// Average the pixels of every image in the stack
 			cv::Mat avgImg( m_vImageStack.front().rows, m_vImageStack.front().cols, m_vImageStack.front().type() );
