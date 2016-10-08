@@ -202,13 +202,19 @@ bool CamDisplayWindow::HandleEVFImage()
 			{
 				if ( uDataSize && pData )
 				{
-					// Convert from JPG to rgb24
+					// It seems like the camera gives me a JPG
+					// that gets converted into a BGR24 image
 					cv::Mat matJPG( 1, uDataSize, CV_8UC1, pData );
 					cv::Mat matImg = cv::imdecode( matJPG, 1 );
 					if ( matImg.empty() || matImg.type() != CV_8UC3 )
 					{
 						throw std::runtime_error( "Error decoding JPG image!" );
 					}
+
+					// convert to RGB
+					// I actually don't know why I can't do everything
+					// in BGR, but the images kept coming up black
+					cv::cvtColor( matImg, matImg, CV_BGR2RGB );
 
 					if ( bDoHistEq )
 						equalizeIntensityHist( matImg );
