@@ -185,7 +185,7 @@ bool CamDisplayWindow::HandleEVFImage()
 				nImages = 1;
 				break;
 			case CameraApp::Mode::Equalizing:
-				//bDoHistEq = true;
+				bDoHistEq = true;
 			case CameraApp::Mode::Averaging:
 				nImages = 10;
 				break;
