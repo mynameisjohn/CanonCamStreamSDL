@@ -1,5 +1,8 @@
+#include <libraw/libraw.h>
+
 #include "Command.h"
 #include "CameraApp.h"
+
 
 bool EndEvfCommand::execute()
 {
@@ -14,7 +17,6 @@ bool EndEvfCommand::execute()
 	{
 		return true;
 	}
-
 
 	// Get depth of field status.
 	EdsUInt32 depthOfFieldPreview = _model->getEvfDepthOfFieldPreview();
@@ -31,7 +33,6 @@ bool EndEvfCommand::execute()
 			Sleep( 500 );
 		}
 	}
-
 
 	// Change the output device.
 	if ( err == EDS_ERR_OK )
@@ -145,4 +146,62 @@ bool TakePictureCommand::execute()
 	}
 
 	return true;
+}
+
+bool DownloadCommand::execute()
+{
+	// Execute command 	
+	
+		EdsError				err = EDS_ERR_OK;
+		EdsStreamRef			stream = NULL;
+
+		//Acquisition of the downloaded image information
+		EdsDirectoryItemInfo	dirItemInfo;
+		err = EdsGetDirectoryItemInfo( _directoryItem, &dirItemInfo );
+
+		//Make the file stream at the forwarding destination
+		if ( err == EDS_ERR_OK )
+		{
+			//err = EdsCreateFileStream( dirItemInfo.szFileName, kEdsFileCreateDisposition_CreateAlways, kEdsAccess_ReadWrite, &stream );
+			err = EdsCreateMemoryStream( dirItemInfo.size, &stream );
+		}
+
+		//Download image
+		if ( err == EDS_ERR_OK )
+		{
+			err = EdsDownload( _directoryItem, dirItemInfo.size, stream );
+		}
+
+		//Forwarding completion
+		if ( err == EDS_ERR_OK )
+		{
+			err = EdsDownloadComplete( _directoryItem );
+		}
+
+		//Release Item
+		if ( _directoryItem != NULL )
+		{
+			err = EdsRelease( _directoryItem );
+			_directoryItem = NULL;
+		}
+
+		LibRaw l;
+		void * pData( nullptr );
+		EdsUInt64 uDataSize( 0 );
+		err |= EdsGetLength( stream, &uDataSize );
+		err |= EdsGetPointer( stream, &pData );
+
+		int lrRet = l.open_buffer( pData, uDataSize );
+		lrRet = l.unpack();
+		lrRet = l.raw2image();
+		l.recycle();
+
+		//Release stream
+		if ( stream != NULL )
+		{
+			err = EdsRelease( stream );
+			stream = NULL;
+		}
+
+		return true;
 }

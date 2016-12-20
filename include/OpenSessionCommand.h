@@ -36,7 +36,6 @@ public:
 	
 		//The communication with the camera begins
 		err = EdsOpenSession(_model->getCameraObject());
-	
 
 		//Preservation ahead is set to PC
 		if(err == EDS_ERR_OK)
@@ -66,7 +65,7 @@ public:
 		if(locked)
 		{
 			EdsSendStatusCommand(_model->getCameraObject(), kEdsCameraStatusCommand_UIUnLock, 0);
-		}	
+		}
 		
 		return true;
 	}

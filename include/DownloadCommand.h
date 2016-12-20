@@ -40,54 +40,5 @@ public:
 
 
 	// Execute command 	
-	virtual bool execute()
-	{
-		EdsError				err = EDS_ERR_OK;
-		EdsStreamRef			stream = NULL;
-
-		//Acquisition of the downloaded image information
-		EdsDirectoryItemInfo	dirItemInfo;
-		err = EdsGetDirectoryItemInfo( _directoryItem, &dirItemInfo);
-
-		//Make the file stream at the forwarding destination
-		if(err == EDS_ERR_OK)
-		{	
-			err = EdsCreateFileStream(dirItemInfo.szFileName, kEdsFileCreateDisposition_CreateAlways, kEdsAccess_ReadWrite, &stream);
-		}	
-
-		////Set Progress
-		//if(err == EDS_ERR_OK)
-		//{
-		//	err = EdsSetProgressCallback(stream, ProgressFunc, kEdsProgressOption_Periodically, this);
-		//}
-
-
-		//Download image
-		if(err == EDS_ERR_OK)
-		{
-			err = EdsDownload( _directoryItem, dirItemInfo.size, stream);
-		}
-
-		//Forwarding completion
-		if(err == EDS_ERR_OK)
-		{
-			err = EdsDownloadComplete( _directoryItem);
-		}
-
-		//Release Item
-		if(_directoryItem != NULL)
-		{
-			err = EdsRelease( _directoryItem);
-			_directoryItem = NULL;
-		}
-
-		//Release stream
-		if(stream != NULL)
-		{
-			err = EdsRelease(stream);
-			stream = NULL;
-		}
-
-		return true;
-	}
+	bool execute() override;
 };

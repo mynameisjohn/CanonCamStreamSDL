@@ -125,6 +125,7 @@ void CamDisplayWindow::Draw()
 void equalizeIntensityHist( cv::Mat& in )
 {
 	// Convert to YCbCr and equalize histogram, recombine and unconvert
+	// FWIW I think the input images are 8 bit
 	cv::Mat matYCR;
 	cv::cvtColor( in, matYCR, CV_RGB2YCrCb );
 	std::vector<cv::Mat> vChannels;
@@ -132,7 +133,6 @@ void equalizeIntensityHist( cv::Mat& in )
 	cv::equalizeHist( vChannels[0], vChannels[0] );
 	cv::merge( vChannels, matYCR );
 	cv::cvtColor( matYCR, in, CV_YCrCb2RGB );
-	in.convertTo( in, CV_32FC3, 1.f / 0xFF );
 };
 
 bool CamDisplayWindow::HandleEVFImage()
@@ -218,8 +218,8 @@ bool CamDisplayWindow::HandleEVFImage()
 
 					if ( bDoHistEq )
 						equalizeIntensityHist( matImg );
-					else
-						matImg.convertTo( matImg, CV_32FC3, 1.f / 0xFF );
+					
+					matImg.convertTo( matImg, CV_32FC3, 1.f / 0xFF );
 
 					if ( nImages > 1 )
 						m_vImageStack.emplace_back( std::move( matImg ) );
@@ -239,7 +239,8 @@ bool CamDisplayWindow::HandleEVFImage()
 			for ( cv::Mat& img : m_vImageStack )
 				avgImg += fDiv * img;
 
-			//equalizeIntensityHist( avgImg );
+			// Find stars here, draw circles
+			m_StarFinder.HandleImage( avgImg );
 
 			// Lock mutex, post to read image and set flag
 			{
@@ -255,8 +256,6 @@ bool CamDisplayWindow::HandleEVFImage()
 		// Enqueue the next download command, get out
 		if ( m_pCamApp->GetIsEvfRunning() )
 			m_pCamApp->GetCmdQueue()->push_back( new DownloadEvfCommand( m_pCamApp->GetCamModel(), this ) );
-		else
-			return true;
 
 		return true;
 	}

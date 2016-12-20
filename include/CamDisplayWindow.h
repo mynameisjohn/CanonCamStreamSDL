@@ -5,6 +5,7 @@
 #include "GLCamera.h"
 #include "Drawable.h"
 #include "DownloadEvfCommand.h"
+#include "StarFinder.h"
 
 #include <mutex>
 #include <opencv2/core/mat.hpp>
@@ -35,9 +36,11 @@ class CamDisplayWindow : public SDLGLWindow, public DownloadEvfCommand::Receiver
 	bool m_bTexCreated;
 	std::mutex m_muEVFImage;
 	bool m_bUploadReadImg;
-//	EdsImgStream m_ReadImg, m_WriteImg;
+	//	EdsImgStream m_ReadImg, m_WriteImg;
 
 	bool updateImage();
+
+	StarFinder m_StarFinder;
 
 public:
 	CamDisplayWindow( CameraApp * pApp, std::string strName, int posX, int posY, int width, int height, int flags,
@@ -48,4 +51,9 @@ public:
 	void Draw();
 
 	bool HandleEVFImage() override;
+
+	void SetStarFinderParams( float fFilterRadius, float fDilationRadius, float fHWHM, float fIntensityThreshold )
+	{
+		m_StarFinder.SetStarFinderParams( fFilterRadius, fDilationRadius, fHWHM, fIntensityThreshold );
+	}
 };
