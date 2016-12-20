@@ -240,7 +240,9 @@ bool CamDisplayWindow::HandleEVFImage()
 				avgImg += fDiv * img;
 
 			// Find stars here, draw circles
+			int numChans = avgImg.channels();
 			m_StarFinder.HandleImage( avgImg );
+			int numChans2 = avgImg.channels();
 
 			// Lock mutex, post to read image and set flag
 			{

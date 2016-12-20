@@ -135,6 +135,13 @@ bool StarFinder::findStars( cv::Mat& img )
 	if ( img.empty() )
 		return false;
 
+	if ( img.channels() > 1 )
+	{
+		cv::Mat imgGrey;
+		cv::cvtColor( img, imgGrey, CV_RGB2GRAY );
+		img = imgGrey.clone();
+	}
+
 	// So we know what we're working with here
 	if ( img.type() != CV_32F )
 		throw std::runtime_error( "Error: What kind of image is StarFinder working with?!" );
@@ -199,31 +206,22 @@ bool StarFinder::findStars( cv::Mat& img )
 // Just find the stars
 bool StarFinder::HandleImage( cv::Mat& img )
 {
-	if ( img.channels() > 1 )
-	{
-		cv::Mat imgGrey;
-		cv::cvtColor( img, imgGrey, CV_RGB2GRAY );
-		img = imgGrey;
-	}
-
-	if ( findStars( img ) )
+	cv::Mat imgIn = img.clone();
+	if ( findStars( imgIn ) )
 	{
 		// Use thrust to find stars in pixel coordinates
 		const float fStarRadius = 10.f;
 		std::vector<Circle> vStarLocations = FindStarsInImage( fStarRadius, m_imgBoolean );
 
 		// Create copy of original input and draw circles where stars were found
-		cv::Mat hHighlight = img.clone();
 		const int nHighlightThickness = 1;
 		const cv::Scalar sHighlightColor( 0xde, 0xad, 0 );
 
 		for ( const Circle ptStar : vStarLocations )
 		{
 			// TODO should I be checking if we go too close to the edge?
-			cv::circle( hHighlight, cv::Point( ptStar.fX, ptStar.fY ), ptStar.fR, sHighlightColor, nHighlightThickness );
+			cv::circle( img, cv::Point( ptStar.fX, ptStar.fY ), ptStar.fR, sHighlightColor, nHighlightThickness );
 		}
-
-		img = hHighlight;
 
 		return true;
 	}
