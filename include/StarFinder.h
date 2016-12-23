@@ -39,14 +39,14 @@ protected:
 	cv::Mat m_imgTmp;
 
 	// Leaves bool image with star locations
-	bool findStars( cv::Mat& img );
+	bool findStars( cv::Mat img );
 
 public:
 	// TODO work out some algorithm parameters,
 	// it's all hardcoded nonsense right now
 	StarFinder( float fFilterRadius = .03f, float fDilationRadius = .015f, float fHWHM = 2.5f, float fIntensityThreshold = .25f );
 
-	bool HandleImage( cv::Mat& img );
+	bool HandleImage( cv::Mat img );
 
 	void SetStarFinderParams( float fFilterRadius, float fDilationRadius, float fHWHM, float fIntensityThreshold );
 };

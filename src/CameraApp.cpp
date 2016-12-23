@@ -34,12 +34,15 @@ CamDisplayWindow * CameraApp::GetWindow() const
 
 void CameraApp::quit()
 {
-	m_abRunning.store( false );
-	m_abEvfRunning.store( false );
-	m_aMode.store( CameraApp::Mode::Off );
+	if ( m_abRunning.load() )
+	{
+		m_abRunning.store( false );
+		m_abEvfRunning.store( false );
+		m_aMode.store( CameraApp::Mode::Off );
 
-	if ( m_CommandThread.joinable() )
-		m_CommandThread.join();
+		if ( m_CommandThread.joinable() )
+			m_CommandThread.join();
+	}
 }
 
 void CameraApp::start()

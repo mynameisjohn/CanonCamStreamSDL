@@ -2,6 +2,8 @@
 
 #include <opencv2/imgproc.hpp>
 
+#include <iostream>
+
 StarFinder::StarFinder( float fFilterRadius, float fDilationRadius, float fHWHM, float fIntensityThreshold ) :
 	// These are some good defaults
 	m_fFilterRadius( fFilterRadius ),
@@ -130,27 +132,37 @@ std::vector<Circle> FindStarsInImage( float fStarRadius, cv::Mat& dBoolImg )
 	return CollapseCircles( vRet );
 }
 
-bool StarFinder::findStars( cv::Mat& img )
+bool StarFinder::findStars( cv::Mat img )
 {
+	// Need data
 	if ( img.empty() )
 		return false;
 
+	// Single channel
 	if ( img.channels() > 1 )
 	{
 		cv::Mat imgGrey;
 		cv::cvtColor( img, imgGrey, CV_RGB2GRAY );
-		img = imgGrey.clone();
+		cv::swap( img, imgGrey );
+	}
+
+	// Normalized float
+	if ( img.type() != CV_32F )
+	{
+		const double dDivFactor = 1. / ( 1 << ( 8 * img.elemSize() / img.channels() ) );
+		cv::Mat imgFloat;
+		img.convertTo( imgFloat, CV_32F, dDivFactor );
+		cv::swap( img, imgFloat );
 	}
 
 	// So we know what we're working with here
 	if ( img.type() != CV_32F )
-		throw std::runtime_error( "Error: What kind of image is StarFinder working with?!" );
+		throw std::runtime_error( "Error: SF requires single channel float input!" );
 
 	// Initialize if we haven't yet
 	if ( m_imgInput.empty() )
 	{
 		// Preallocate the GPU mats needed during computation
-		m_imgInput = img;
 		m_imgGaussian = cv::Mat( img.size(), CV_32F );
 		m_imgTopHat = cv::Mat( img.size(), CV_32F );
 		m_imgPeak = cv::Mat( img.size(), CV_32F );
@@ -163,6 +175,10 @@ bool StarFinder::findStars( cv::Mat& img )
 		m_imgBoolean = cv::Mat( img.size(), CV_8U );
 	}
 
+	// Work with reference to original, but it isn't modified
+	m_imgInput = img;
+
+	// Compute filter and dilation kernel sizes from image dimensions
 	int nFilterRadius = std::min<int>( 15, ( .5f + m_fFilterRadius * m_imgInput.cols ) );
 	int nDilationRadius = std::min<int>( 15, ( .5f + m_fDilationRadius * m_imgInput.cols ) );
 
@@ -184,7 +200,6 @@ bool StarFinder::findStars( cv::Mat& img )
 
 	// Create the dilated image (initialize its pixels to m_fIntensityThreshold)
 	m_imgDilated.setTo( cv::Scalar( m_fIntensityThreshold ) );
-
 	DoDilationFilter( nDilationRadius, m_imgThreshold, m_imgDilated );
 
 	// Subtract the dilated image from the gaussian peak image
@@ -204,24 +219,22 @@ bool StarFinder::findStars( cv::Mat& img )
 }
 
 // Just find the stars
-bool StarFinder::HandleImage( cv::Mat& img )
+bool StarFinder::HandleImage( cv::Mat img )
 {
-	cv::Mat imgIn = img.clone();
-	if ( findStars( imgIn ) )
+	if ( findStars( img ) )
 	{
 		// Use thrust to find stars in pixel coordinates
 		const float fStarRadius = 10.f;
 		std::vector<Circle> vStarLocations = FindStarsInImage( fStarRadius, m_imgBoolean );
+		if ( !vStarLocations.empty() )
+			std::cout << vStarLocations.size() << " stars found!" << std::endl;
 
-		// Create copy of original input and draw circles where stars were found
+		// Draw circles at stars in input
+		// TODO should I be checking if we go too close to the edge?
 		const int nHighlightThickness = 1;
 		const cv::Scalar sHighlightColor( 0xde, 0xad, 0 );
-
 		for ( const Circle ptStar : vStarLocations )
-		{
-			// TODO should I be checking if we go too close to the edge?
 			cv::circle( img, cv::Point( ptStar.fX, ptStar.fY ), ptStar.fR, sHighlightColor, nHighlightThickness );
-		}
 
 		return true;
 	}

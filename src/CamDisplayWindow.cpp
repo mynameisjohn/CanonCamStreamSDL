@@ -77,6 +77,12 @@ bool CamDisplayWindow::updateImage()
 	std::lock_guard<std::mutex> lg( m_muEVFImage );
 	if ( m_bUploadReadImg && m_ReadImg.empty() == false )
 	{
+		if ( m_ReadImg.channels() != 3 || m_ReadImg.type() != CV_32FC3 )
+		{
+			m_muEVFImage.unlock();
+			throw std::runtime_error( "Error: Invalid image format for OpenGL!" );
+		}
+
 		if ( m_bTexCreated )
 		{
 			glBindTexture( GL_TEXTURE_2D, m_PictureQuad.GetTexID() );
@@ -178,9 +184,7 @@ bool CamDisplayWindow::HandleEVFImage()
 		switch ( appMode )
 		{
 			case CameraApp::Mode::Off:
-				nImages = 0;
-				// return true; // ?
-				break;
+				return true; // ?
 			case CameraApp::Mode::Streaming:
 				nImages = 1;
 				break;
@@ -239,10 +243,17 @@ bool CamDisplayWindow::HandleEVFImage()
 			for ( cv::Mat& img : m_vImageStack )
 				avgImg += fDiv * img;
 
+			//avgImg = cv::imread( "Untitled.png" );
+
 			// Find stars here, draw circles
-			int numChans = avgImg.channels();
 			m_StarFinder.HandleImage( avgImg );
-			int numChans2 = avgImg.channels();
+
+			//avgImg.convertTo( avgImg, CV_32FC3, 1.f / 0xFF );
+
+			// Hello world
+			//const int nHighlightThickness = 1;
+			//const cv::Scalar sHighlightColor(0.5, 0, 0 );
+			//cv::circle( avgImg, cv::Point( 100, 50 ), 10, sHighlightColor, nHighlightThickness );
 
 			// Lock mutex, post to read image and set flag
 			{

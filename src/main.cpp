@@ -10,6 +10,8 @@
 #include "Shader.h"
 #include "GLCamera.h"
 
+#include "TelescopeComm.h"
+
 #include <GL/glew.h>
 #include <SDL.h>
 #include <SDL_opengl.h>
@@ -266,16 +268,7 @@ int main( int argc, char ** argv )
 	}
 
 	CameraApp camApp( camera );
-
-	if ( argc > 4 )
-	{
-		float fFilterRadius, fDilationRadius, fHWHM, fIntensityThreshold;
-		std::stringstream( argv[1] ) >> fFilterRadius;
-		std::stringstream( argv[2] ) >> fDilationRadius;
-		std::stringstream( argv[3] ) >> fHWHM;
-		std::stringstream( argv[4] ) >> fIntensityThreshold;
-		camApp.GetWindow()->SetStarFinderParams( fFilterRadius, fDilationRadius, fHWHM, fIntensityThreshold );
-	}
+	std::unique_ptr<TelescopeComm> upTelescopeComm;
 	
 	//Set Property Event Handler
 	if ( false == checkErr( EdsSetPropertyEventHandler( camera, kEdsPropertyEvent_All, CameraEventListener::handlePropertyEvent, (EdsVoid *) &camApp ) ) )
@@ -295,12 +288,29 @@ int main( int argc, char ** argv )
 		const std::string strArg = argv[1];
 		if ( strArg == "S" )
 			camApp.SetMode( CameraApp::Mode::Streaming );
-		if ( strArg == "A" )
+		else if ( strArg == "A" )
 			camApp.SetMode( CameraApp::Mode::Averaging );
-		if ( strArg == "E" )
+		else if ( strArg == "E" )
 			camApp.SetMode( CameraApp::Mode::Equalizing );
 		else
 			camApp.SetMode( CameraApp::Mode::Streaming );
+
+		if ( argc > 5 )
+		{
+			float fFilterRadius, fDilationRadius, fHWHM, fIntensityThreshold;
+			std::stringstream( argv[2] ) >> fFilterRadius;
+			std::stringstream( argv[3] ) >> fDilationRadius;
+			std::stringstream( argv[4] ) >> fHWHM;
+			std::stringstream( argv[5] ) >> fIntensityThreshold;
+			camApp.GetWindow()->SetStarFinderParams( fFilterRadius, fDilationRadius, fHWHM, fIntensityThreshold );
+
+			std::cout << fFilterRadius << ", " << fDilationRadius << ", " << fHWHM << ", " << fIntensityThreshold << std::endl;
+
+			if ( argc > 6 )
+			{
+				upTelescopeComm.reset( new TelescopeComm( argv[6] ) );
+			}
+		}
 	}
 	else
 		camApp.SetMode( CameraApp::Mode::Streaming );
@@ -320,45 +330,96 @@ int main( int argc, char ** argv )
 	bool bRun = true;
 	while ( bRun )
 	{
-		// Check SDL events
-		SDL_Event e{ 0 };
-		while ( SDL_PollEvent( &e ) )
+		try
 		{
-			// They can quit with winX or escape
-			if ( e.type == SDL_QUIT )
-				bRun = false;
-			else if ( e.type == SDL_KEYUP )
+			// Check SDL events
+			SDL_Event e { 0 };
+			while ( SDL_PollEvent( &e ) )
 			{
-				if ( e.key.keysym.sym == SDLK_ESCAPE )
+				// They can quit with winX or escape
+				if ( e.type == SDL_QUIT )
 					bRun = false;
-				// Press space to take a picture
-				else if ( e.key.keysym.sym == SDLK_SPACE )
+				else if ( e.type == SDL_KEYUP || e.type == SDL_KEYDOWN )
 				{
-					// Enqueue {End EVF, Take picture, Start EVF} as a composite
-					camApp.GetCmdQueue()->push_back( new CompositeCommand( camApp.GetCamModel(), {
-						new EndEvfCommand( camApp.GetCamModel() ),
-						new TakePictureCommand( camApp.GetCamModel() ),
-						new StartEvfCommand( camApp.GetCamModel() ) } ) );
-					// Wait for all commands to complete
-					camApp.GetCmdQueue()->waitTillCompletion();
-					// Enequeue a download evf commmand to resume the stream
-					camApp.GetCmdQueue()->push_back( new DownloadEvfCommand( camApp.GetCamModel(), camApp.GetWindow() ) );
-				}
-				else
-				{
-					auto itKey = mapKeysToMode.find( e.key.keysym.sym );
-					if ( itKey != mapKeysToMode.end() )
+					if ( upTelescopeComm )
 					{
-						camApp.SetMode( itKey->second );
+						int nSpeed = 4500;
+						int nSlewX( 0 ), nSlewY( 0 );
+						if ( e.type == SDL_KEYDOWN )
+							upTelescopeComm->GetSlew( &nSlewX, &nSlewY );
+
+						bool bSlew = false;
+						if ( e.type == SDL_KEYDOWN )
+						{
+							switch ( e.key.keysym.sym )
+							{
+								case SDLK_LEFT:
+									nSlewX = -nSpeed;
+									bSlew = true;
+									break;
+								case SDLK_RIGHT:
+									nSlewX = nSpeed;
+									bSlew = true;
+									break;
+								case SDLK_UP:
+									nSlewY = nSpeed;
+									bSlew = true;
+									break;
+								case SDLK_DOWN:
+									nSlewY = -nSpeed;
+									bSlew = true;
+									break;
+								default:
+									break;
+							}
+						}
+						else
+							bSlew = true;
+
+						if ( bSlew )
+							upTelescopeComm->SetSlew( nSlewX, nSlewY );
+					}
+
+					if ( e.type == SDL_KEYUP )
+					{
+						if ( e.key.keysym.sym == SDLK_ESCAPE )
+							bRun = false;
+						// Press space to take a picture
+						else if ( e.key.keysym.sym == SDLK_SPACE )
+						{
+							// Enqueue {End EVF, Take picture, Start EVF} as a composite
+							camApp.GetCmdQueue()->push_back( new CompositeCommand( camApp.GetCamModel(), {
+								new EndEvfCommand( camApp.GetCamModel() ),
+								new TakePictureCommand( camApp.GetCamModel() ),
+								new StartEvfCommand( camApp.GetCamModel() ) } ) );
+							// Wait for all commands to complete
+							camApp.GetCmdQueue()->waitTillCompletion();
+							// Enequeue a download evf commmand to resume the stream
+							camApp.GetCmdQueue()->push_back( new DownloadEvfCommand( camApp.GetCamModel(), camApp.GetWindow() ) );
+						}
+						else
+						{
+							auto itKey = mapKeysToMode.find( e.key.keysym.sym );
+							if ( itKey != mapKeysToMode.end() )
+							{
+								camApp.SetMode( itKey->second );
+							}
+						}
 					}
 				}
 			}
-		}
 
-		if ( camApp.GetMode() == CameraApp::Mode::Off )
-			bRun = false;
-		
-		camApp.GetWindow()->Draw();
+			if ( camApp.GetMode() == CameraApp::Mode::Off )
+				bRun = false;
+
+
+			camApp.GetWindow()->Draw();
+		}
+		catch ( std::runtime_error& e )
+		{
+			std::cout << e.what() << std::endl;
+			break;
+		}
 	}
 
 	// Quit camera app
