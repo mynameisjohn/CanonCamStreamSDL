@@ -306,9 +306,18 @@ int main( int argc, char ** argv )
 
 			std::cout << fFilterRadius << ", " << fDilationRadius << ", " << fHWHM << ", " << fIntensityThreshold << std::endl;
 
-			if ( argc > 6 )
+			try
 			{
-				upTelescopeComm.reset( new TelescopeComm( argv[6] ) );
+				if ( argc > 6 )
+				{
+					upTelescopeComm.reset( new TelescopeComm( argv[6] ) );
+				}
+			}
+			catch ( std::runtime_error e )
+			{
+				std::cout << e.what() << std::endl;
+				std::cout << "Error: Unable to create link to telescope mount!" << std::endl;
+				upTelescopeComm.reset();
 			}
 		}
 	}
@@ -341,12 +350,13 @@ int main( int argc, char ** argv )
 					bRun = false;
 				else if ( e.type == SDL_KEYUP || e.type == SDL_KEYDOWN )
 				{
+					// Telescope control branch
 					if ( upTelescopeComm )
 					{
 						int nSpeed = 4500;
 						int nSlewX( 0 ), nSlewY( 0 );
 						if ( e.type == SDL_KEYDOWN )
-							upTelescopeComm->GetSlew( &nSlewX, &nSlewY );
+							upTelescopeComm->GetSlewRate( &nSlewX, &nSlewY );
 
 						bool bSlew = false;
 						if ( e.type == SDL_KEYDOWN )
@@ -354,19 +364,19 @@ int main( int argc, char ** argv )
 							switch ( e.key.keysym.sym )
 							{
 								case SDLK_LEFT:
-									nSlewX = -nSpeed;
+									nSlewX = e.type == SDL_KEYDOWN ? -nSpeed : 0;
 									bSlew = true;
 									break;
 								case SDLK_RIGHT:
-									nSlewX = nSpeed;
+									nSlewX = e.type == SDL_KEYDOWN ? nSpeed : 0;
 									bSlew = true;
 									break;
 								case SDLK_UP:
-									nSlewY = nSpeed;
+									nSlewY = e.type == SDL_KEYDOWN ? -nSpeed : 0;
 									bSlew = true;
 									break;
 								case SDLK_DOWN:
-									nSlewY = -nSpeed;
+									nSlewY = e.type == SDL_KEYDOWN ? nSpeed : 0;
 									bSlew = true;
 									break;
 								default:
@@ -377,7 +387,7 @@ int main( int argc, char ** argv )
 							bSlew = true;
 
 						if ( bSlew )
-							upTelescopeComm->SetSlew( nSlewX, nSlewY );
+							upTelescopeComm->SetSlewRate( nSlewX, nSlewY );
 					}
 
 					if ( e.type == SDL_KEYUP )

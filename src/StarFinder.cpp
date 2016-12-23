@@ -121,8 +121,8 @@ std::vector<Circle> FindStarsInImage( float fStarRadius, cv::Mat& dBoolImg )
 		{
 			uint8_t val = dBoolImg.at<uint8_t>( y, x );
 			if ( val )
-			{
 #pragma omp critical
+			{
 				vRet.push_back( { (float) x, (float) y, fStarRadius } );
 			}
 		}
